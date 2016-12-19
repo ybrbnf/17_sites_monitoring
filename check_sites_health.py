@@ -5,8 +5,6 @@ import argparse
 import re
 import calendar
 
-# http://edu-top.ru/katalog/urls.php
-
 
 def load_urls4check(path):
     urls = []
@@ -18,16 +16,15 @@ def load_urls4check(path):
     return urls
 
 
-def is_server_respond_with_200(urls):
-    status = []
+def get_http_status_code(urls):
+    status_code = []
     for item in urls:
         response = requests.get(item)
-        status_code = response.status_code
-        if status_code == 200:
-            status.append('status : OK')
+        if response.status_code == 200:
+            status_code.append('status OK')
         else:
-            status.append('status : False')
-    return status
+            status_code.append(response.status_code)
+    return status_code
 
 
 def get_domain_from_url(urls):
@@ -68,26 +65,27 @@ def deadline_test(exp_date):
     return lifetime
 
 
-def prepare_to_print_result(urls, url_status, deadline):
-    dct_of_results = dict(zip(urls, zip(url_status, deadline)))
-    return dct_of_results
+def get_report(urls, http_status, deadline):
+    report = dict(zip(urls, zip(http_status, deadline)))
+    return report
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('--help', action='help',
-                        help='show this message and exit')
+    parser.add_argument('-h', '--help', action='help',
+                        help='Справка')
     parser.add_argument('-f', '--filename', type=str,
                         help='Файл со списком проверяемых сайтов')
     args = parser.parse_args()
     if not args.filename:
-        print ('нет такого файла')
+        print('не указан файл с адресами проверяемых сайтов')
+        exit()
     else:
         urls = load_urls4check(args.filename)
     domain_name = get_domain_from_url(urls)
     exp_date = get_domain_expiration_date(domain_name)
-    url_status = is_server_respond_with_200(urls)
+    http_status = get_http_status_code(urls)
     lifetime = deadline_test(exp_date)
-    report = prepare_to_print_result(urls, url_status, lifetime)
+    report = get_report(urls, http_status, lifetime)
     for key in report.keys():
-        print (key, report[key])
+        print(key, report[key])
